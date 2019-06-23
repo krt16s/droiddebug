@@ -4,7 +4,6 @@
 
 import java.lang.*;
 import java.io.*;
-import java.nio.file.*;
 
 import uk.gov.nationalarchives.droid.core.*;
 import uk.gov.nationalarchives.droid.core.interfaces.*;
@@ -12,72 +11,59 @@ import uk.gov.nationalarchives.droid.core.interfaces.resource.FileSystemIdentifi
 import uk.gov.nationalarchives.droid.core.interfaces.resource.RequestMetaData;
 
 public class App {
-    public String getGreeting() {
-        return "Hello world.";
-    }
 
     public static void main(String[] args) {
-        System.out.println(new App().getGreeting());
-
-        doDroidIdent(args[0], args[1]);
+        try {
+            for (long sl = (new File(args[1]).length()) * 2; sl >= -1L; sl = sl - 1000L) {
+                doDroidIdent(args[0], args[1], sl);
+                System.out.println("---");
+            }
+        } catch (Exception ex) {
+            System.out.println(ex.getMessage());
+            System.exit(-1);
+        }
     }
 
-    public static void doDroidIdent(String sigfile, String idfile) {
+    public static void doDroidIdent(String sigfile, String idfile, long sizelimit) throws Exception {
         File file = new File(idfile);
+        System.out.println("MEMINFO: " + Runtime.getRuntime().maxMemory() + " max, " + Runtime.getRuntime().freeMemory() + " free, " + Runtime.getRuntime().totalMemory() + " total, " + sizelimit + " sizelimit, " + file.length() + " filesize");
 
         BinarySignatureIdentifier mysig = new BinarySignatureIdentifier();
         mysig.setSignatureFile(sigfile);
-        try {
-            mysig.init();
-        } catch (Exception ex) {
-            System.out.println(ex.getMessage());
+        mysig.init();
+
+        IdentificationResultCollection results = null;
+
+        //sizelimit = file.length();
+        RequestMetaData metadata = new RequestMetaData(sizelimit, file.lastModified(), file.getName());
+        RequestIdentifier identifier = new RequestIdentifier(file.toURI());
+        FileSystemIdentificationRequest request = null;
+
+        request = new FileSystemIdentificationRequest(metadata, identifier);
+        request.open(file);
+        results = mysig.matchBinarySignatures(request);
+
+        if (request != null) {
+            System.out.println("INFO: request != null");
+            request.close();
         }
 
-        try {
-            IdentificationResultCollection results = null;
-
-            System.out.println("MEMINFO: " + Runtime.getRuntime().maxMemory() + " max, " + Runtime.getRuntime().freeMemory() + " free, " + Runtime.getRuntime().totalMemory() + " total");
-            long sizelimit = file.length();
-            System.out.println("droid sizelimit: " + sizelimit);
-            RequestMetaData metadata = new RequestMetaData(sizelimit, file.lastModified(), file.getName());
-            RequestIdentifier identifier = new RequestIdentifier(file.toURI());
-            FileSystemIdentificationRequest request = null;
-
-            try {
-                request = new FileSystemIdentificationRequest(metadata, identifier);
-                request.open(file);
-                results = mysig.matchBinarySignatures(request);
-                System.out.println("MEMINFO: " + Runtime.getRuntime().maxMemory() + " max, " + Runtime.getRuntime().freeMemory() + " free, " + Runtime.getRuntime().totalMemory() + " total");
-
-            } catch (Exception ex) {
-                System.out.println("Error while processing with Droid: " + ex);
-                System.out.println("MEMINFO: " + Runtime.getRuntime().maxMemory() + " max, " + Runtime.getRuntime().freeMemory() + " free, " + Runtime.getRuntime().totalMemory() + " total");
-            } finally {
-                if (request != null) {
-                    request.close();
-                }
-            }
-
-            if (results.getResults().size() == 0) {
-                System.out.println(".size() == 0");
-                results = mysig.matchExtensions(request, false);
-
-            }
-
-            for (IdentificationResult res : results.getResults()) {
-                System.out.println("droid-mimetype " + res.getMimeType());
-                System.out.println("droid-typename " + res.getName());
-                System.out.println("droid-puid " + res.getPuid());
-                System.out.println("droid-x-version " + res.getVersion());
-                System.out.println("droid-x-extid " + res.getExtId());
-            }
-
-        } catch (Exception ex) {
-            System.out.println("Error using Droid: " + ex.getMessage());
-            System.out.println("MEMINFO: " + Runtime.getRuntime().maxMemory() + " max, " + Runtime.getRuntime().freeMemory() + " free, " + Runtime.getRuntime().totalMemory() + " total");
+        if (results.getResults().size() == 0) {
+            System.out.println("INFO: .size() == 0");
+            results = mysig.matchExtensions(request, false);
         }
 
+        for (IdentificationResult res : results.getResults()) {
+            System.out.println("RESULT: droid-mimetype:" + res.getMimeType() + ", droid-typename:" + res.getName() + ", droid-puid:" + res.getPuid() + ", droid-x-version:" + res.getVersion() + ", droid-x-extid:" + res.getExtId());
+        }
 
+        System.out.println("INFO: remove lower hits");
+        mysig.removeLowerPriorityHits(results);
+        for (IdentificationResult res : results.getResults()) {
+            System.out.println("RESULT: droid-mimetype:" + res.getMimeType() + ", droid-typename:" + res.getName() + ", droid-puid:" + res.getPuid() + ", droid-x-version:" + res.getVersion() + ", droid-x-extid:" + res.getExtId());
+        }
+
+        System.out.println("MEMINFO: " + Runtime.getRuntime().maxMemory() + " max, " + Runtime.getRuntime().freeMemory() + " free, " + Runtime.getRuntime().totalMemory() + " total, " + sizelimit + " sizelimit, " + file.length() + " filesize");
     }
 
 }
