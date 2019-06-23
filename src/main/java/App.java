@@ -14,7 +14,12 @@ public class App {
 
     public static void main(String[] args) {
         try {
-            for (long sl = (new File(args[1]).length()) * 2; sl >= -1L; sl = sl - 1000L) {
+            long filesize = new File(args[1]).length();
+            for (long sl = 2 * filesize; sl > filesize - 1000L; sl = sl - 1000L) {
+                doDroidIdent(args[0], args[1], sl);
+                System.out.println("---");
+            }
+            for (long sl = filesize; sl >= -1L; sl = sl - 1000L) {
                 doDroidIdent(args[0], args[1], sl);
                 System.out.println("---");
             }
