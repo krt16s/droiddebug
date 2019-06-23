@@ -21,6 +21,21 @@ dependencies {
     // This dependency is found on compile classpath of this component and consumers.
     compile 'com.google.guava:guava:23.0'
 
+    // Droid
+    implementation 'uk.gov.nationalarchives:droid:6.4' // hardcoded version!
+    implementation 'uk.gov.nationalarchives:droid-binary:6.4'
+    implementation 'uk.gov.nationalarchives:droid-results:6.4'
+    implementation 'uk.gov.nationalarchives:droid-container:6.4'
+    implementation 'uk.gov.nationalarchives:droid-core:6.4'
+    implementation('uk.gov.nationalarchives:droid-core-interfaces:6.4'){
+        exclude group: 'org.apache.ant', module: 'compress-antlib'
+        exclude group: 'org.apache.ant', module: 'ant-compress'
+    }
+    implementation 'uk.gov.nationalarchives:droid-parent:6.4'
+
+    implementation 'org.apache.ant:ant-compress:1.5'
+
+
     // Use JUnit test framework
     testCompile 'junit:junit:4.12'
 }
@@ -29,5 +44,6 @@ dependencies {
 repositories {
     // Use jcenter for resolving your dependencies.
     // You can declare any Maven/Ivy/file repository here.
+    mavenCentral()
     jcenter()
 }
